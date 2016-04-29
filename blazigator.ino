@@ -57,18 +57,25 @@ Several conditions will use an interupt signal. Each of these events has a coris
 #include <Fan.h>
 #include <LiquidReward.h>
 
-extern volatile boolean lev0pressed = false;
-extern volatile boolean lev1pressed = false;
-extern volatile boolean beamBroken = false;
+boolean lever0pressed = false;
+boolean lever1pressed = false;
+boolean beamBroken = false;
+boolean lickDetected = false;
+
+void lever0_isr() {lever0pressed = true;}
+void lever1_isr() {lever1pressed = true;}
+void beamBroken_isr() {beamBroken = true;}
+void lickDetected_isr() {lickDetected = true;}
+
 
 //instantiate fan
 Fan fan = Fan(22);
 
 //instantiate levers
-Lever levers[] = {Lever(7,8,9,2,3), Lever(10,5,6,48,50)};
+Lever levers[] = {Lever(7,8,9,2,3, lever0_isr), Lever(10,5,6,48,50, lever1_isr)};
 
 //instantiate eye
-Instrument eye = Instrument(5);
+Instrument eye = Instrument(5, beamBroken_isr);
 
 //instantiate Liquid Reward 
 LiquidReward reward = LiquidReward(4);
@@ -94,16 +101,16 @@ void loop() {
         stringComplete = false;
     }
 
-    if (lev0pressed) { //activates on moving L0, sometimes
+    if (lever0pressed) { //activates on moving L0, sometimes
         delay(500);
         Serial.println("L0 pressed," + String(millis()));
-        lev0pressed = false;
+        lever0pressed = false;
     }
 
-    if (lev1pressed) {
+    if (lever1pressed) {
         delay(500);
         Serial.println("L1 pressed," + String(millis()));
-        lev1pressed = false;
+        lever1pressed = false;
     }
 
     if (beamBroken) { //activates on retracting L1
