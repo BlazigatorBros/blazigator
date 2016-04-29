@@ -52,23 +52,23 @@ Several conditions will use an interupt signal. Each of these events has a coris
     Lickometer                    -  Lick Detected, <timestamp>              - A lick has been detected
     Smoke Despencer               -  Dose Queue Empty, <timestamp>           - There are no more doses avalable in the chute
 */
+#include <Instrument.h>
 #include <Lever.h>
-#include <Breakbeam.h>
-#include <FanControl.h>
+#include <Fan.h>
 #include <LiquidReward.h>
-//#include <SmokeDelivery.h>
-#include <CapacitiveSensor.h>
 
 extern volatile boolean lev0pressed = false;
 extern volatile boolean lev1pressed = false;
 extern volatile boolean beamBroken = false;
 
-//instantiate fan at minimum speed
-FanControl fans[] = {FanControl(22, 13, 21, 80)};
+//instantiate fan
+Fan fan = Fan(22);
+
 //instantiate levers
 Lever levers[] = {Lever(7,8,9,2,3), Lever(10,5,6,48,50)};
+
 //instantiate eye
-Breakbeam eye = Breakbeam(5);  //Currently not working, ouputs 244Hz
+Instrument eye = Instrument(5);
 
 //instantiate Liquid Reward 
 LiquidReward reward = LiquidReward(4);
@@ -78,12 +78,9 @@ LiquidReward reward = LiquidReward(4);
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
-
-
 void setup() {
     // initialize serial:
     Serial.begin(9600);     //Port for commands/confirmation
-    Serial2.begin(9600);    //Port for data logging
     // reserve 200 bytes for the inputString:
     inputString.reserve(200);
 }
@@ -100,20 +97,17 @@ void loop() {
     if (lev0pressed) { //activates on moving L0, sometimes
         delay(500);
         Serial.println("L0 pressed," + String(millis()));
-        Serial2.println("L0 pressed,"+ String(millis()));
         lev0pressed = false;
     }
 
     if (lev1pressed) {
         delay(500);
         Serial.println("L1 pressed," + String(millis()));
-        Serial2.println("L1 pressed," + String(millis()));
         lev1pressed = false;
     }
 
     if (beamBroken) { //activates on retracting L1
         Serial.println("Beam broken," + String(millis()));
-        Serial2.println("Beam broken," + String(millis()));
         delay(500);
         beamBroken = false;
     }
@@ -133,15 +127,6 @@ void serialEvent() {
     }
 }
 
-void serialEvent2() {
-    while (Serial2.available()) {
-        // get the new byte:
-        if((char)Serial2.read() == 'E') {
-            Serial2.println("Motion Detected," + String(millis()));
-            Serial.println("Motion Detected," + String(millis()));
-        }
-    }
-}
 // return the substring  of data split by seperator
 String getValue(String data, char separator, int index) {
     int found = 0;
@@ -165,82 +150,59 @@ void run(String command) {
   
     // isolate paramater
     int param = getValue(command, ' ', 1).toInt();
-    // Serial.println("Function: " + f);
-    // Serial.println("Paramater: " + String(param));
   
     if (f == "doses") {
         Serial.println("dosing," + String(millis()));
-        Serial2.println("dosing," + String(millis()));
-        // send dose to smoke box
-        // SmokeDelivery.send_dose(param);
     } 
  
     if (f == "disp") {
         // dispense liquid reward
         Serial.println("dispensing," + String(millis()));
-        Serial2.println("dispensing," + String(millis()));
-        reward.Dispense(param);
+        reward.dispense(param);
     } 
 
     if (f == "lever_state") {
         // find and send state of appropriate lever
-        Serial.println(String(levers[param].state()) + "," + String(millis()));
-        Serial2.println(String(levers[param].state()) + "," + String(millis()));
+        Serial.println(String(levers[param].getState()) + "," + String(millis()));
     }
   
     if (f == "lever_out") {
         // send out lever
         Serial.println("extending " + String(param) + "," + String(millis()));
-        Serial2.println("extending " + String(param) + "," + String(millis()));
-//        noInterrupts();
         levers[param].setCarriage(false);
-//        delayMicroseconds(10000);
-//        interrupts();
     } 
 
     if (f == "lever_in") {
         // retract lever
         Serial.println("retracting " + String(param)  + "," + String(millis()));
-        Serial2.println("retracting " + String(param)  + "," + String(millis()));
-//        noInterrupts();
         levers[param].setCarriage(true);
-//        delayMicroseconds(10000);
-//        interrupts(); 
     } 
 
     if (f == "get_speed\n") {
-        Serial.println(String(fans[0].getSpeed()) + "," + String(millis()));
-        Serial2.println(String(fans[0].getSpeed()) + "," + String(millis()));
-
+        Serial.println(String(fan.getSpeed()) + "," + String(millis()));
     }
 
     if (f == "set_speed") {
         
         if (!param) {
             Serial.println("turning off," + String(millis()));
-            Serial2.println("turning off," + String(millis()));
-            fans[0].fanOff();
+            fan.fanOff();
         } 
         else if (param) {
-            if(!fans[0].getSpeed()) {
-                fans[0].fanOn();
+            if(fan.getSpeed()) {
+                fan.fanOn();
             }
             Serial.println("changing speed," + String(millis()));
-            Serial2.println("changing speed," + String(millis()));
-            fans[0].setSpeed(param);
-            // fans[1].setSpeed(param);
+            fan.setSpeed(param);
         }
     }
 
     if (f == "time\n") {
-        Serial.println(String(millis()));
         Serial.println(String(millis()));
     }
 
     if (f == "debug\n") {
         // debug code here
         Serial.println("this is a test," + String(millis()));
-        Serial2.println("this is a test," + String(millis()));
     }
-}  
-
+}
