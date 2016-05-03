@@ -60,8 +60,8 @@
 #include <SmokeEmitter.h>
 
 //pins
-#define LEVER_0_STATE_PIN A2
-#define LEVER_1_STATE_PIN A1
+#define LEVER_0_STATE_PIN 20
+#define LEVER_1_STATE_PIN 19
 #define LEVER_0_IN_LIMIT_PIN 26
 #define LEVER_1_IN_LIMIT_PIN 40
 #define LEVER_0_OUT_LIMIT_PIN 24
@@ -71,20 +71,25 @@
 #define LEVER_0_IN_MOTOR_PIN 11
 #define LEVER_1_IN_MOTOR_PIN 12
 #define EYE_PIN 1
-#define LIQUID_REWARD_PIN 1
+#define LIQUID_REWARD_PIN A0
 #define LICKOMETER_PIN 1
 
+extern volatile byte lever_0_pressed = false;
+extern volatile byte lever_1_pressed = false;
+extern volatile byte break_beam_pressed = false;
+extern volatile byte lickometer_pressed = false;
+
 void lever0_isr() {
-      Serial.println("L0 pressed," + String(millis()));
+      lever_0_pressed = true;
 }
 void lever1_isr() {
-    Serial.println("L1 pressed," + String(millis()));
+      lever_1_pressed = true;
 }
 void beamBroken_isr() {
-    Serial.println("Beam broken," + String(millis()));
+      break_beam_pressed = true;
 }
 void lickDetected_isr() {
-    Serial.println("Lick detected," + String(millis()));
+      lickometer_pressed = true;
 }
 
 //instantiate fan
@@ -112,7 +117,7 @@ Instrument eye = Instrument(EYE_PIN, beamBroken_isr);
 Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
 
 //instantiate Liquid Reward 
-LiquidReward reward = LiquidReward(LIQUID_REWARD_PIN);
+LiquidReward reward = LiquidReward(A0);
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
@@ -133,6 +138,28 @@ void loop() {
     inputString = "";
     stringComplete = false;
   }
+
+  //check interupt flags
+  if (lever_0_pressed && levers[0].getState(100)) {
+    Serial.println("L0 pressed," + String(millis()));
+    lever_0_pressed = false;
+  }
+
+  if (lever_1_pressed && levers[1].getState(100)) {
+    Serial.println("L1 pressed," + String(millis()));
+    lever_1_pressed = false;
+  }
+
+  if (break_beam_pressed && eye.getState(100)) {
+    Serial.println("Beam broken," + String(millis()));
+    break_beam_pressed = false;
+  }
+
+  if (lickometer_pressed && lickometer.getState(100)) {
+    Serial.println("Lick detected," + String(millis()));
+    lickometer_pressed = false;
+  }
+
 }
 
 void serialEvent() {
@@ -186,7 +213,7 @@ void run(String command) {
 
   if (f == "lever_state") {
     // find and send state of appropriate lever
-    Serial.println(String(levers[param].getState()) + "," + String(millis()));
+    Serial.println(String(levers[param].getState(100)) + "," + String(millis()));
   }
 
   if (f == "lever_out") {
