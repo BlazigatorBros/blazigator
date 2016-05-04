@@ -119,6 +119,9 @@ Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
 //instantiate Liquid Reward 
 LiquidReward reward = LiquidReward(A0);
 
+//420$wag$wag
+SmokeEmitter smoker = SmokeEmitter(&Serial3);
+
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
@@ -174,6 +177,21 @@ void serialEvent() {
       stringComplete = true;
     }
   }
+}
+
+void serialEvent3() {
+
+  int s = smoker.checkStatus();
+  //poll the smoke emitter
+  switch(s) {
+    case S_WAIT:
+      return;
+    case S_ERROR:
+      Serial.println("ERROR_SMOKER_EMPTY");
+      break; 
+  }
+
+  Serial.print(smoker.getLastMessage());
 }
 
 // return the substring  of data split by seperator
@@ -247,16 +265,8 @@ void run(String command) {
     }
   }
 
-  if (f == "burn") {
-
-  }
-
-  if (f == "load") {
-
-  }
-
-  if (f == "empty") {
-
+  if (f == "burn\n" || f == "load\n" || f == "empty\n") {
+    smoker.sendCommand(f);
   }
 
   if (f == "time\n") {
