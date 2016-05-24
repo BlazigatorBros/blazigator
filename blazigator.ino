@@ -58,6 +58,7 @@
 #include <Fan.h>
 #include <LiquidReward.h>
 #include <SmokeEmitter.h>
+#include <Dootdoot.h>
 
 //pins
 #define LEVER_0_STATE_PIN 20
@@ -74,6 +75,7 @@
 #define LIQUID_REWARD_PIN A0
 #define LICKOMETER_PIN 3
 #define HOUSELIGHT 13
+#define DOOT 9
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
@@ -120,6 +122,9 @@ Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
 //instantiate Liquid Reward 
 LiquidReward reward = LiquidReward(A0);
 
+//instatniate doot doot
+Dootdoot doot = Dootdoot(DOOT, 1500);
+
 //420$wag$wag
 SmokeEmitter smoker = SmokeEmitter(&Serial3);
 
@@ -135,6 +140,7 @@ void setup() {
   //houselight
   digitalWrite(HOUSELIGHT, LOW);
   pinMode(HOUSELIGHT, OUTPUT);
+
 }
 
 void loop() {
@@ -235,6 +241,16 @@ void run(String command) {
       digitalWrite(HOUSELIGHT, LOW);
       Serial.println("houselight off," + String(millis()));
     }
+  }
+
+  if (f == "set_doot") {
+    Serial.println("Setting doot," + String(millis()));
+    doot.setFreq(param);
+  }
+
+  if (f == "doot") {
+    Serial.println("Dooting," + String(millis()));
+    doot.doot(param);
   }
 
   if (f == "doses") {
