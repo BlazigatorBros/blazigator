@@ -70,9 +70,10 @@
 #define LEVER_1_OUT_MOTOR_PIN 10
 #define LEVER_0_IN_MOTOR_PIN 11
 #define LEVER_1_IN_MOTOR_PIN 12
-#define EYE_PIN 1
+#define EYE_PIN 2
 #define LIQUID_REWARD_PIN A0
-#define LICKOMETER_PIN 1
+#define LICKOMETER_PIN 3
+#define HOUSELIGHT 13
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
@@ -110,7 +111,7 @@ Lever levers[] = {
       LEVER_1_OUT_MOTOR_PIN,
       LEVER_1_IN_MOTOR_PIN,
       lever1_isr)
-    };
+};    
 
 //instantiate eye and licko
 Instrument eye = Instrument(EYE_PIN, beamBroken_isr);
@@ -130,6 +131,10 @@ void setup() {
   Serial.begin(9600);     //Port for commands/confirmation
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
+
+  //houselight
+  digitalWrite(HOUSELIGHT, LOW);
+  pinMode(HOUSELIGHT, OUTPUT);
 }
 
 void loop() {
@@ -153,12 +158,12 @@ void loop() {
     lever_1_pressed = false;
   }
 
-  if (break_beam_pressed && eye.getState(100)) {
+  if (break_beam_pressed && eye.getState(200)) {
     Serial.println("Beam broken," + String(millis()));
     break_beam_pressed = false;
   }
 
-  if (lickometer_pressed && lickometer.getState(100)) {
+  if (lickometer_pressed && lickometer.getState(200)) {
     Serial.println("Lick detected," + String(millis()));
     lickometer_pressed = false;
   }
@@ -191,7 +196,9 @@ void serialEvent3() {
       break; 
   }
 
-  Serial.print(smoker.getLastMessage());
+  String m = smoker.getLastMessage();
+  m.replace('\n',',');
+  Serial.println(m + String(millis()));
 }
 
 // return the substring  of data split by seperator
@@ -219,6 +226,17 @@ void run(String command) {
   // isolate paramater
   int param = getValue(command, ' ', 1).toInt();
 
+  if(f == "houselight") {
+
+    if (param) {
+      digitalWrite(HOUSELIGHT, HIGH);
+      Serial.println("houselight on," + String(millis()));
+    } else {
+      digitalWrite(HOUSELIGHT, LOW);
+      Serial.println("houselight off," + String(millis()));
+    }
+  }
+
   if (f == "doses") {
     Serial.println("dosing," + String(millis()));
   } 
@@ -227,7 +245,7 @@ void run(String command) {
     // dispense liquid reward
     Serial.println("dispensing," + String(millis()));
     reward.dispense(param);
-  } 
+  }
 
   if (f == "lever_state") {
     // find and send state of appropriate lever
@@ -244,7 +262,7 @@ void run(String command) {
     // retract lever
     Serial.println("retracting " + String(param)  + "," + String(millis()));
     levers[param].setCarriage(true);
-  } 
+  }
 
   if (f == "get_speed\n") {
     Serial.println(String(fan.getSpeed()) + "," + String(millis()));
@@ -278,4 +296,3 @@ void run(String command) {
     Serial.println("this is a test," + String(millis()));
   }
 }
-
