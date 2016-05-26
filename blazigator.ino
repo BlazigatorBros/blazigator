@@ -74,8 +74,9 @@
 #define EYE_PIN 2
 #define LIQUID_REWARD_PIN A0
 #define LICKOMETER_PIN 3
-#define HOUSELIGHT 13
+#define HOUSELIGHT 8
 #define DOOT 9
+
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
@@ -310,5 +311,31 @@ void run(String command) {
   if (f == "debug\n") {
     // debug code here
     Serial.println("this is a test," + String(millis()));
+  }
+
+  if (f == "victory\n") {
+    victory();
+  }
+}
+
+void playTone(int tone, int duration) {
+  for (long i = 0; i < duration * 1000L; i += tone * 2) {
+    digitalWrite(DOOT, HIGH);
+    delayMicroseconds(tone);
+    digitalWrite(DOOT, LOW);
+    delayMicroseconds(tone);
+  }
+}
+
+void victory() {
+  int tones[] = {1915, 1700, 1519, 1432, 2700};
+  int notes[] = {2, 2, 2, 2, 0, 1, 2, 1, 2};
+  int note = 0;
+  int tempo[] = {200, 200, 200, 400, 400, 400, 200, 200, 600}; 
+  int breaks[] = {80, 80, 80, 220, 200, 200, 300, 80, 220}; 
+  for (int i = 0; i < 9; i = i + 1){
+    note = notes[i];
+    playTone(tones[note]/2, tempo[i]);
+    delay(breaks[i] / 3);
   }
 }
