@@ -1,4 +1,3 @@
-
 /*
     Blazigator main sketch file
  
@@ -71,30 +70,46 @@
 #define LEVER_1_OUT_MOTOR_PIN 10
 #define LEVER_0_IN_MOTOR_PIN 11
 #define LEVER_1_IN_MOTOR_PIN 12
-#define EYE_PIN 2
+#define EYE_PIN 3
 #define LIQUID_REWARD_PIN A0
-#define LICKOMETER_PIN 3
-#define HOUSELIGHT 8
-#define DOOT 9
-
+#define LICKOMETER_PIN 2
+#define HOUSELIGHT 16
+#define DOOT 46
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
 extern volatile byte break_beam_pressed = false;
 extern volatile byte lickometer_pressed = false;
 
+
+
 void lever0_isr() {
       lever_0_pressed = true;
 }
+
 void lever1_isr() {
       lever_1_pressed = true;
 }
+
 void beamBroken_isr() {
-      break_beam_pressed = true;
+  if(break_beam_pressed == false){
+    break_beam_pressed = true;
+    Serial.println("Beam broken," + String(millis()));
+  }
+  else{}
 }
+
 void lickDetected_isr() {
-      lickometer_pressed = true;
+  if(lickometer_pressed == false){
+    lickometer_pressed = true;
+    Serial.println("Lick triggered," + String(millis()));
+  }
+  else{}
 }
+
+//instantiate eye and licko
+Instrument eye = Instrument(EYE_PIN, beamBroken_isr);
+Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
 
 //instantiate fan
 Fan fan = Fan(22);
@@ -116,9 +131,7 @@ Lever levers[] = {
       lever1_isr)
 };    
 
-//instantiate eye and licko
-Instrument eye = Instrument(EYE_PIN, beamBroken_isr);
-Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
+
 
 //instantiate Liquid Reward 
 LiquidReward reward = LiquidReward(A0);
@@ -139,9 +152,8 @@ void setup() {
   inputString.reserve(200);
 
   //houselight
-  digitalWrite(HOUSELIGHT, LOW);
   pinMode(HOUSELIGHT, OUTPUT);
-
+  digitalWrite(HOUSELIGHT, LOW);
 }
 
 void loop() {
@@ -165,13 +177,13 @@ void loop() {
     lever_1_pressed = false;
   }
 
-  if (break_beam_pressed && eye.getState(200)) {
-    Serial.println("Beam broken," + String(millis()));
+  if (break_beam_pressed && !eye.getState(100)) {
+    delay(500);
     break_beam_pressed = false;
   }
 
-  if (lickometer_pressed && lickometer.getState(200)) {
-    Serial.println("Lick detected," + String(millis()));
+  if (lickometer_pressed && !lickometer.getState(100)) {
+    delay(100);
     lickometer_pressed = false;
   }
 
@@ -208,7 +220,7 @@ void serialEvent3() {
   Serial.println(m + String(millis()));
 }
 
-// return the substring  of data split by seperator
+//Return the substring  of data split by seperator
 String getValue(String data, char separator, int index) {
   int found = 0;
   int strIndex[] = {
@@ -225,6 +237,7 @@ String getValue(String data, char separator, int index) {
   return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
+//
 void run(String command) {
 
   // isolate function
@@ -234,7 +247,6 @@ void run(String command) {
   int param = getValue(command, ' ', 1).toInt();
 
   if(f == "houselight") {
-
     if (param) {
       digitalWrite(HOUSELIGHT, HIGH);
       Serial.println("houselight on," + String(millis()));
