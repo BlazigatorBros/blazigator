@@ -15,9 +15,9 @@
  Otherwise a default burn time will be used.
  
  disp <duration>             -  dispensing,<timestamp>   -   The arduino responds with a timestamp (seconds since program began running),
- and then activates the pump to release sucrose reward from the reservoir. 
- if <num_steps> is specified, then this will dictate the number of steps the pump with turn.
- Otherwise a default amount will be used.
+ and then opens the solenoid to release sucrose reward from the reservoir. 
+ if <duration> is specified, then this will dictate the time the solenoid remains open, 
+ in milliseconds. Otherwise a default burn time will be used.
  
  lever_state <lever_number>  -  <state>,<timestamp>      -   Each connected lever will be assigned a number, referenced  by ‘lever_number’. 
  Responds with ‘0’ if the selected lever is not pressed, otherwise responds ‘1’. 
@@ -61,23 +61,21 @@
 #include <SPI.h>
 
 //pins
-#define LEVER_0_STATE_PIN 		20
-#define LEVER_1_STATE_PIN 		19
-#define LEVER_0_IN_LIMIT_PIN 	26
-#define LEVER_1_IN_LIMIT_PIN 	40
+#define LEVER_0_STATE_PIN 20
+#define LEVER_1_STATE_PIN 19
+#define LEVER_0_IN_LIMIT_PIN 26
+#define LEVER_1_IN_LIMIT_PIN 40
 #define LEVER_0_OUT_LIMIT_PIN 24
 #define LEVER_1_OUT_LIMIT_PIN 38
-#define SLAVE_SEL_PIN 			  53
-#define EYE_PIN 				      3
-#define LIQUID_REWARD_PIN 		A0
-#define LICKOMETER_PIN 			  2
-#define HOUSELIGHT 				    47
-#define DOOT 					        46
-
-#define LEVER_0_OUT_CMD			  0x0783
-#define LEVER_1_OUT_CMD			  0x0789
-#define LEVER_0_IN_CMD			  0x0785
-#define LEVER_1_IN_CMD			  0x0791
+#define LEVER_0_OUT_MOTOR_PIN 13
+#define LEVER_1_OUT_MOTOR_PIN 10
+#define LEVER_0_IN_MOTOR_PIN 11
+#define LEVER_1_IN_MOTOR_PIN 12
+#define EYE_PIN 3
+#define LIQUID_REWARD_PIN A0
+#define LICKOMETER_PIN 2
+#define HOUSELIGHT 16
+#define DOOT 46
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
@@ -116,26 +114,24 @@ Fan fan = Fan(22);
 //instantiate levers
 Lever levers[] = {
     Lever(LEVER_0_STATE_PIN,
-        LEVER_0_IN_LIMIT_PIN,
-        LEVER_0_OUT_LIMIT_PIN,
-        LEVER_0_OUT_CMD,
-        LEVER_0_IN_CMD,
-        SLAVE_SEL_PIN,
-        lever0_isr),
+          LEVER_0_IN_LIMIT_PIN,
+          LEVER_0_OUT_LIMIT_PIN,
+          LEVER_0_OUT_MOTOR_PIN,
+          LEVER_0_IN_MOTOR_PIN,
+          lever0_isr),
 
     Lever(LEVER_1_STATE_PIN,
-      	LEVER_1_IN_LIMIT_PIN,
-      	LEVER_1_OUT_LIMIT_PIN,
-      	LEVER_1_OUT_CMD,
-     	LEVER_1_IN_CMD,
-      	SLAVE_SEL_PIN,
-      	lever1_isr)
+      LEVER_1_IN_LIMIT_PIN,
+      LEVER_1_OUT_LIMIT_PIN,
+      LEVER_1_OUT_MOTOR_PIN,
+      LEVER_1_IN_MOTOR_PIN,
+      lever1_isr)
 };    
 
 
 
 //instantiate Liquid Reward 
-LiquidReward reward = LiquidReward(200,60);
+LiquidReward reward = LiquidReward(A0);
 
 //instatniate doot doot
 Dootdoot doot = Dootdoot(DOOT, 1500);
