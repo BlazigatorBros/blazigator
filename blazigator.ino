@@ -65,19 +65,19 @@
 #define LEVER_1_STATE_PIN 		19
 #define LEVER_0_IN_LIMIT_PIN 	26
 #define LEVER_1_IN_LIMIT_PIN 	40
-#define LEVER_0_OUT_LIMIT_PIN 24
-#define LEVER_1_OUT_LIMIT_PIN 38
-#define SLAVE_SEL_PIN 			  53
-#define EYE_PIN 				      3
+#define LEVER_0_OUT_LIMIT_PIN   24
+#define LEVER_1_OUT_LIMIT_PIN   38
+#define SLAVE_SEL_PIN 			53
+#define EYE_PIN 				3
 #define LIQUID_REWARD_PIN 		A0
-#define LICKOMETER_PIN 			  2
-#define HOUSELIGHT 				    47
-#define DOOT 					        46
+#define LICKOMETER_PIN 			2
+#define HOUSELIGHT 				47
+#define DOOT 					46
 
-#define LEVER_0_OUT_CMD			  0x0783
-#define LEVER_1_OUT_CMD			  0x0789
-#define LEVER_0_IN_CMD			  0x0785
-#define LEVER_1_IN_CMD			  0x0791
+#define LEVER_0_OUT_CMD         0x0789
+#define LEVER_1_OUT_CMD         0x0783
+#define LEVER_0_IN_CMD			0x0791
+#define LEVER_1_IN_CMD			0x0785
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
@@ -111,7 +111,7 @@ Instrument eye = Instrument(EYE_PIN, beamBroken_isr);
 Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
 
 //instantiate fan
-Fan fan = Fan(22);
+//Fan fan = Fan(22);
 
 //instantiate levers
 Lever levers[] = {
@@ -135,7 +135,7 @@ Lever levers[] = {
 
 
 //instantiate Liquid Reward 
-LiquidReward reward = LiquidReward(200,60);
+LiquidReward reward = LiquidReward(200,SLAVE_SEL_PIN);
 
 //instatniate doot doot
 Dootdoot doot = Dootdoot(DOOT, 1500);
@@ -151,6 +151,12 @@ void setup() {
   Serial.begin(9600);     //Port for commands/confirmation
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
+  
+  SPI.begin();
+  digitalWrite(SLAVE_SEL_PIN, HIGH);
+
+  // levers[0].init();
+  // levers[1].init();
   //houselight
   pinMode(HOUSELIGHT, OUTPUT);
   digitalWrite(HOUSELIGHT, LOW);
@@ -223,8 +229,7 @@ void serialEvent3() {
 //Return the substring  of data split by seperator
 String getValue(String data, char separator, int index) {
   int found = 0;
-  int strIndex[] = {
-    0, -1  };
+  int strIndex[] = {0, -1};
   int maxIndex = data.length()-1;
 
   for(int i=0; i<=maxIndex && found<=index; i++) {
@@ -292,7 +297,7 @@ void run(String command) {
     Serial.println("retracting " + String(param)  + "," + String(millis()));
     levers[param].setCarriage(true);
   }
-
+/*
   if (f == "get_speed\n") {
     Serial.println(String(fan.getSpeed()) + "," + String(millis()));
   }
@@ -311,7 +316,7 @@ void run(String command) {
       fan.setSpeed(param);
     }
   }
-
+*/
   if (f == "burn\n" || f == "load\n" || f == "empty\n") {
     smoker.sendCommand(f);
   }
@@ -327,6 +332,10 @@ void run(String command) {
 
   if (f == "victory\n") {
     victory();
+  }
+
+  if (f == "test") {
+    Serial.println("returned," + String(test(param), HEX));
   }
 }
 
@@ -350,4 +359,8 @@ void victory() {
     playTone(tones[note]/2, tempo[i]);
     delay(breaks[i] / 3);
   }
+}
+
+uint16_t test(uint16_t stuff) {
+    return reward.SPIcmd(stuff);
 }
