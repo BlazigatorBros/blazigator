@@ -61,23 +61,22 @@
 #include <SPI.h>
 
 //pins
-#define LEVER_0_STATE_PIN 		20
-#define LEVER_1_STATE_PIN 		19
-#define LEVER_0_IN_LIMIT_PIN 	26
-#define LEVER_1_IN_LIMIT_PIN 	40
+#define LEVER_0_STATE_PIN       20
+#define LEVER_1_STATE_PIN       19
+#define LEVER_0_IN_LIMIT_PIN    26
+#define LEVER_1_IN_LIMIT_PIN    40
 #define LEVER_0_OUT_LIMIT_PIN   24
 #define LEVER_1_OUT_LIMIT_PIN   38
-#define SLAVE_SEL_PIN 			53
-#define EYE_PIN 				3
-#define LIQUID_REWARD_PIN 		A0
-#define LICKOMETER_PIN 			2
-#define HOUSELIGHT 				47
-#define DOOT 					46
+#define SLAVE_SEL_PIN           53
+#define EYE_PIN                 3
+#define LICKOMETER_PIN          2
+#define HOUSELIGHT              47
+#define BUZZER                  46
 
 #define LEVER_0_OUT_CMD         0x0789
 #define LEVER_1_OUT_CMD         0x0783
-#define LEVER_0_IN_CMD			0x0791
-#define LEVER_1_IN_CMD			0x0785
+#define LEVER_0_IN_CMD          0x0791
+#define LEVER_1_IN_CMD          0x0785
 
 extern volatile byte lever_0_pressed = false;
 extern volatile byte lever_1_pressed = false;
@@ -106,7 +105,7 @@ void lickDetected_isr() {
   }
 }
 
-//instantiate eye and licko
+//instantiate eye and lickometer
 Instrument eye = Instrument(EYE_PIN, beamBroken_isr);
 Instrument lickometer = Instrument(LICKOMETER_PIN, lickDetected_isr);
 
@@ -124,12 +123,12 @@ Lever levers[] = {
         lever0_isr),
 
     Lever(LEVER_1_STATE_PIN,
-      	LEVER_1_IN_LIMIT_PIN,
-      	LEVER_1_OUT_LIMIT_PIN,
-      	LEVER_1_OUT_CMD,
-     	LEVER_1_IN_CMD,
-      	SLAVE_SEL_PIN,
-      	lever1_isr)
+        LEVER_1_IN_LIMIT_PIN,
+        LEVER_1_OUT_LIMIT_PIN,
+        LEVER_1_OUT_CMD,
+        LEVER_1_IN_CMD,
+        SLAVE_SEL_PIN,
+        lever1_isr)
 };    
 
 
@@ -137,10 +136,10 @@ Lever levers[] = {
 //instantiate Liquid Reward 
 LiquidReward reward = LiquidReward(200,SLAVE_SEL_PIN);
 
-//instatniate doot doot
-Dootdoot doot = Dootdoot(DOOT, 1500);
+//instatniate buzzer
+Dootdoot doot = Dootdoot(BUZZER, 1500);
 
-//420$wag$wag
+//instantiate smoker
 SmokeEmitter smoker = SmokeEmitter(&Serial3);
 
 String inputString = "";         // a string to hold incoming data
@@ -155,8 +154,6 @@ void setup() {
   SPI.begin();
   digitalWrite(SLAVE_SEL_PIN, HIGH);
 
-  // levers[0].init();
-  // levers[1].init();
   //houselight
   pinMode(HOUSELIGHT, OUTPUT);
   digitalWrite(HOUSELIGHT, LOW);
