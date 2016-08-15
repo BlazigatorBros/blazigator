@@ -69,6 +69,7 @@
 #define LEVER_1_OUT_LIMIT_PIN   38
 #define SLAVE_SEL_PIN           53
 #define EYE_PIN                 3
+#define LIQUID_REWARD_PIN       A0
 #define LICKOMETER_PIN          2
 #define HOUSELIGHT              47
 #define BUZZER                  46
